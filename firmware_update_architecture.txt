@@ -1,0 +1,118 @@
+# Firmware Update Service Architecture
+
+---
+
+## **Slide 1: Title**
+**Firmware Update Service – High Level Architecture**  
+Purpose: Safe, scalable, and observable firmware rollouts across datacenter and cloud infrastructure.
+
+---
+
+## **Slide 2: Objectives**
+- Deliver BIOS, BMC, SSD, NIC, GPU, CPLD updates safely at scale.  
+- Ensure low blast radius with staged rollouts.  
+- Support rollback and compliance visibility.  
+- Integrate with existing CI/CD and telemetry pipelines.
+
+---
+
+## **Slide 3: High-Level Overview**
+**Key Layers:**
+1. Control Plane – orchestration and policy logic.  
+2. Distribution Layer – secure artifact delivery.  
+3. Data Plane – execution on hosts and devices.  
+
+---
+
+## **Slide 4: Control Plane Components**
+- **Firmware Update API** – create campaigns, define targets, trigger waves.  
+- **Metadata & State Store** – device inventory, version tracking, audit logs.  
+- **Scheduler / Wave Orchestrator** – controls concurrency, canary promotion.  
+- **Policy & Compliance Engine** – health gates, maintenance windows, approvals.  
+- **Artifact Repository** – immutable, signed firmware images and manifests.  
+- **Telemetry & Audit Service** – progress metrics and compliance dashboards.  
+
+---
+
+## **Slide 5: Data Plane Components**
+- **Device Agent (Host/BMC)** – pulls desired state, verifies signatures, applies updates.  
+- **Local Cache/Proxy** – reduces WAN load by caching artifacts per site or rack.  
+- **Firmware Executors** – vendor-specific tools for BIOS, NIC, SSD, etc.  
+- **Health & Recovery Manager** – post-update validation and rollback control.
+
+---
+
+## **Slide 6: Distribution Layer**
+- **Global Object Store (Origin)** → Central source for all artifacts.  
+- **Regional Caches** → Reduce latency and bandwidth consumption.  
+- **Site Proxies / CDN Nodes** → Local artifact delivery.  
+- **P2P Distribution (Optional)** → Peer-to-peer file sharing for large fleets.
+
+---
+
+## **Slide 7: Update Workflow (Sequence)**
+1. Operator defines campaign → API stores metadata.  
+2. Scheduler plans waves based on fault domains.  
+3. Agents poll desired state and fetch signed artifacts.  
+4. Device performs preflight → update → postcheck.  
+5. Agent reports results → telemetry updates dashboards.  
+6. Orchestrator advances next wave upon success.
+
+---
+
+## **Slide 8: Security Model**
+- Firmware images cryptographically signed (X.509/PGP).  
+- SBOM and supply-chain scanning on upload.  
+- mTLS between control and data plane.  
+- Role-based access (RBAC + ABAC).  
+- Immutable audit logs for regulatory compliance.
+
+---
+
+## **Slide 9: Observability and Metrics**
+- Success rate, rollback count, time-to-update.  
+- Device reachability and cache hit rate.  
+- Structured logs with correlation IDs.  
+- Alerting thresholds on failure spikes.  
+- Central dashboards for regional compliance.
+
+---
+
+## **Slide 10: Text Architecture Diagram**
+```
+             ┌────────────────────────────────────┐
+             │          Control Plane             │
+             │ ┌─────────────┐  ┌──────────────┐ │
+Operator UI→ │ │ Update API  │→│ Scheduler     │ │
+             │ └─────────────┘  └──────────────┘ │
+             │        │             │             │
+             │   Metadata DB   Artifact Repo      │
+             └────────┬────────────┬──────────────┘
+                      │            │
+                      ▼            ▼
+         ┌─────────────────────┐ ┌────────────────────┐
+         │ Regional Cache/Proxy│→│ Device Agent (Host)│
+         └─────────────────────┘ └────────────────────┘
+                                       │
+                                       ▼
+                             Firmware Executors
+```
+
+---
+
+## **Slide 11: Deployment Scale Targets**
+- Regions: 10+  
+- Sites per region: 100+  
+- Hosts per site: up to 10K  
+- Concurrency: <1% per fault domain  
+- 99.5% success within maintenance window
+
+---
+
+## **Slide 12: Summary**
+A cloud-scale firmware update system:
+- Central control plane with strong policy and telemetry.  
+- Secure artifact pipeline with signed binaries and SBOMs.  
+- Distributed caches and intelligent agents for efficiency.  
+- Fault-domain aware orchestration with health-based gating.  
+- Unified visibility, audit, and rollback support.
